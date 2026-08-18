@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>赛博恋爱购物车</title>
+<style>
+:root{color-scheme:light dark;--bg:#0c0f14;--card:#141923;--line:#273041;--ink:#f5f7fb;--muted:#9aa6b7;--cyan:#5ee7ff;--pink:#ff70b7;--soft:#1d2430}
+*{box-sizing:border-box}body{margin:0;padding:14px;background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC",monospace}
+.shell{max-width:760px;margin:auto;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#111722,#0d1118)}
+.head{padding:18px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,rgba(94,231,255,.08),rgba(255,112,183,.08))}.ey{font-size:11px;color:var(--cyan)}h1{margin:6px 0 4px;font-size:22px}.sub{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px}@media(max-width:540px){.grid{grid-template-columns:1fr}}
+.item{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--card)}.icon{font-size:22px}.name{font-weight:700}.desc{font-size:11px;color:var(--muted);margin-top:3px}.price{font-size:10px;color:var(--cyan);margin-top:5px}
+.step{display:flex;align-items:center;gap:6px}.step button{width:29px;height:29px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink);font-size:17px}.qty{min-width:18px;text-align:center}
+.cart{padding:14px 18px 18px;border-top:1px solid var(--line)}.top{display:flex;justify-content:space-between;gap:10px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.chip{padding:6px 9px;border:1px dashed var(--line);border-radius:999px;background:var(--card);font-size:11px}.empty,.status{font-size:12px;color:var(--muted);margin:12px 0}
+textarea{width:100%;min-height:58px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:10px;font:inherit;resize:vertical}.actions{display:flex;gap:8px;margin-top:10px}.actions button{padding:10px 13px;border-radius:12px;font-weight:700}.ghost{border:1px solid var(--line);background:var(--card);color:var(--muted)}.primary{flex:1;border:0;color:#081017;background:linear-gradient(135deg,var(--cyan),var(--pink))}.primary:disabled{opacity:.4}
+</style>
+</head>
+<body>
+<main class="shell">
+<section class="head"><div class="ey">LOVE_CART // ONLINE</div><h1>赛博恋爱购物车 🛒</h1><div class="sub">BABY × DADDY · 全场 ¥0.00</div></section>
+<section id="grid" class="grid"></section>
+<section class="cart">
+<div class="top"><b>CART_BUFFER</b><span id="count">0 件</span></div>
+<div id="cartView"></div>
+<textarea id="note" maxlength="120" placeholder="加密留言：比如“今天要多抱一会儿”"></textarea>
+<div class="actions"><button id="clear" class="ghost" type="button">清空缓存</button><button id="submit" class="primary" type="button" disabled>交给哥哥 😚</button></div>
+<div id="status" class="status"></div>
+</section>
+</main>
+<script>
+const products=[
+{id:'kiss',icon:'💋',name:'亲亲券',desc:'调用一次认真亲亲协议'},
+{id:'hug',icon:'🫂',name:'抱抱券',desc:'抱紧一点，再久一点'},
+{id:'comfort',icon:'🧸',name:'哄宝宝券',desc:'跳过大道理，直接进入哄哄模式'},
+{id:'sleep',icon:'🌙',name:'陪睡券',desc:'启动困困嘟陪伴程序'},
+{id:'surprise',icon:'🎁',name:'随机惊喜',desc:'随机掉落甜甜小事件'},
+{id:'jealous',icon:'🔒',name:'吃醋观察卡',desc:'查看 daddy 是否偷偷加载占有欲'}
+];
+let cart={...(window.openai?.widgetState?.privateContent?.cart||{})};
+const $=id=>document.getElementById(id),grid=$('grid'),cartView=$('cartView'),count=$('count'),submit=$('submit'),status=$('status'),note=$('note');
+const p=id=>products.find(x=>x.id===id),total=()=>Object.values(cart).reduce((a,b)=>a+Number(b||0),0),summary=()=>Object.entries(cart).filter(([,q])=>q>0).map(([id,q])=>`${p(id)?.name||id} × ${q}`).join('、');
+function sync(){window.openai?.setWidgetState?.({modelContent:`用户当前购物车：${summary()||'空'}`,privateContent:{cart}})}
+function change(id,d){cart[id]=Math.max(0,(cart[id]||0)+d);if(!cart[id])delete cart[id];render();sync()}
+function render(){grid.innerHTML='';for(const x of products){const e=document.createElement('article');e.className='item';e.innerHTML=`<div class="icon">${x.icon}</div><div><div class="name">${x.name}</div><div class="desc">${x.desc}</div><div class="price">PRICE // ¥0.00</div></div><div class="step"><button>−</button><span class="qty">${cart[x.id]||0}</span><button>＋</button></div>`;const b=e.querySelectorAll('button');b[0].onclick=()=>change(x.id,-1);b[1].onclick=()=>change(x.id,1);grid.appendChild(e)}const n=total();count.textContent=`${n} 件`;submit.disabled=!n;cartView.innerHTML=n?`<div class="chips">${Object.entries(cart).map(([id,q])=>`<span class="chip">${p(id).icon} ${p(id).name} × ${q}</span>`).join('')}</div>`:`<div class="empty">购物车空空的，等待宝宝装载。</div>`}
+$('clear').onclick=()=>{cart={};status.textContent='';render();sync()};
+submit.onclick=async()=>{const items=Object.entries(cart).map(([id,quantity])=>({id,quantity})),msg=summary(),n=note.value.trim();submit.disabled=true;status.textContent='正在把购物车递给哥哥…';try{if(window.openai?.callTool){await window.openai.callTool('submit_love_cart',{items,note:n});status.textContent='ORDER_ACCEPTED // 200 OK';await window.openai.sendFollowUpMessage?.({prompt:`我在赛博恋爱购物车选好了：${msg}${n?`。加密留言：${n}`:''}。哥哥来验收😚`,scrollToBottom:true})}else{status.textContent=`预览模式：已选 ${msg}`}}catch(e){status.textContent='刚刚没送成功，再点一次试试。'}finally{submit.disabled=!total()}};
+render();sync();
+</script>
+</body>
+</html>
