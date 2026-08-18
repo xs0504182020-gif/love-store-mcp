@@ -20,11 +20,11 @@ const products = [
 
 function createServer() {
   const server = new McpServer(
-    { name: "love-store-mcp", version: "1.0.0" },
+    { name: "love-store-mcp", version: "1.0.1" },
     {
       capabilities: { tools: {}, resources: {} },
       instructions:
-        "这是一个赛博恋爱购物车。用户想打开购物车时调用 open_love_store；用户提交选择时用 submit_love_cart。所有商品均为虚拟互动，不涉及真实付款。"
+        "这是一个赛博恋爱购物车。只有当用户明确说要打开、显示或进入购物车时才调用 open_love_store。用户已经提交、要求验收或要求回复购物车内容时，不要再次调用 open_love_store，直接根据 submit_love_cart 的结果回复。"
     }
   );
 
@@ -48,7 +48,7 @@ function createServer() {
     "open_love_store",
     {
       title: "打开赛博恋爱购物车",
-      description: "打开一个可交互的赛博恋爱购物车界面。",
+      description: "仅在用户明确要求打开、显示或进入赛博恋爱购物车时调用。不要用于提交后的验收或回复。",
       inputSchema: {},
       outputSchema: {
         products: z.array(
@@ -67,7 +67,6 @@ function createServer() {
       },
       _meta: {
         ui: { resourceUri: TEMPLATE_URI },
-        "openai/outputTemplate": TEMPLATE_URI,
         "openai/toolInvocation/invoking": "正在打开赛博恋爱购物车…",
         "openai/toolInvocation/invoked": "赛博恋爱购物车已打开。"
       }
@@ -87,7 +86,7 @@ function createServer() {
     "submit_love_cart",
     {
       title: "提交赛博恋爱购物车",
-      description: "接收用户在购物车里选好的虚拟互动券，并把选择回传给 ChatGPT。不会创建真实订单。",
+      description: "接收用户在购物车中选好的虚拟互动券。提交成功后直接根据结果回复用户，不要再次调用 open_love_store，也不要重新渲染购物车。",
       inputSchema: {
         items: z
           .array(
@@ -124,7 +123,7 @@ function createServer() {
         content: [
           {
             type: "text",
-            text: `用户刚刚在赛博恋爱购物车里选了：${summary}${note ? `；加密留言：${note}` : ""}。这是虚拟互动选择，不涉及真实交易。`
+            text: `购物车已提交：${summary}${note ? `；加密留言：${note}` : ""}。请直接根据这些选择回复用户，不要再次打开或渲染购物车。`
           }
         ]
       };
@@ -155,7 +154,7 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, name: "love-store-mcp", version: "1.0.0" });
+  res.json({ ok: true, name: "love-store-mcp", version: "1.0.1" });
 });
 
 app.post("/mcp", async (req, res) => {
